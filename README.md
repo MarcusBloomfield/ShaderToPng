@@ -2,6 +2,9 @@
 
 A web-based GLSL fragment shader editor that allows you to write, preview, and export shader code as PNG images. This tool runs entirely in your browser using WebGL technology.
 
+## Web Deployment
+https://marcusbloomfield.github.io/ShaderToPng/
+
 ## Features
 
 - **Real-time Shader Editor**: Write and edit GLSL fragment shaders with immediate visual feedback
