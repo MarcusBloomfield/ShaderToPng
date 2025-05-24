@@ -1,118 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'none'; font-src 'self' https://cdnjs.cloudflare.com;">
+  <meta http-equiv="Permissions-Policy" content="accelerometer=(), ambient-light-sensor=(), autoplay=(), battery=(), camera=(), cross-origin-isolated=(), display-capture=(), document-domain=(), encrypted-media=(), execution-while-not-rendered=(), execution-while-out-of-viewport=(), fullscreen=(), geolocation=(), gyroscope=(), keyboard-map=(), magnetometer=(), microphone=(), midi=(), navigation-override=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), usb=(), web-share=(), xr-spatial-tracking=(), clipboard-read=(), clipboard-write=(), gamepad=(), speaker-selection=()">
   <title>GLSL Shader to PNG</title>
-  <style>
-    body { font-family: sans-serif; padding: 1rem; background: #111; color: #eee; }
-    canvas { border: 1px solid #444; display: block; margin-top: 1rem; }
-    textarea { width: 100%; height: 200px; font-family: monospace; }
-    button { margin-top: 1rem; padding: 0.5rem 1rem; }
-  </style>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/material-darker.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/clike/clike.min.js"></script>
 </head>
+
 <body>
 
-<h2>GLSL Fragment Shader Editor</h2>
-<p>Edit the shader code below and click "Render Shader".</p>
+  <h2>GLSL Fragment Shader Editor</h2>
+  <p>Edit the shader code below and click "Render Shader".</p>
 
-<textarea id="shaderInput">
-// Example shader
-precision mediump float;
-uniform vec2 resolution;
+  <div class="error-console-overlay" id="errorConsoleOverlay">
+    <div class="error-console">
+      <div class="error-console-header">
+        <span>Shader Error</span>
+        <button class="error-console-close-button" onclick="hideErrorConsole()">&times;</button>
+      </div>
+      <div class="error-console-message" id="errorConsoleMessage"></div>
+    </div>
+  </div>
 
-void main() {
-  vec2 uv = gl_FragCoord.xy / resolution;
-  gl_FragColor = vec4(uv, 0.5 + 0.5*sin(uv.x * 20.0), 1.0);
-}
+  <div class="container">
+    <textarea id="shaderInput" spellcheck="false" autocorrect="off" autocomplete="off" autocapitalize="off">
+      // Example shader
+      precision mediump float;
+      uniform vec2 resolution;
+
+      void main() {
+        vec2 uv = gl_FragCoord.xy / resolution;
+        gl_FragColor = vec4(uv, 0.5 + 0.5*sin(uv.x * 20.0), 1.0);
+      }
 </textarea>
 
-<br>
-<button onclick="renderShader()">Render Shader</button>
-<button onclick="saveImage()">Save PNG</button>
+    <br>
 
-<canvas id="glcanvas" width="1024" height="1024"></canvas>
+    <canvas id="glcanvas" width="1024" height="1024">
 
-<script>
-const canvas = document.getElementById("glcanvas");
-const gl = canvas.getContext("webgl", { preserveDrawingBuffer: true }); // <-- important!
 
-const vertexShaderSrc = `
-attribute vec2 position;
-void main() {
-  gl_Position = vec4(position, 0.0, 1.0);
-}`;
+    </canvas>
 
-// Fullscreen quad
-const quadVertices = new Float32Array([
-  -1, -1, 1, -1, -1, 1,
-  -1, 1, 1, -1, 1, 1
-]);
-
-const quadBuffer = gl.createBuffer();
-gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
-gl.bufferData(gl.ARRAY_BUFFER, quadVertices, gl.STATIC_DRAW);
-
-let currentProgram = null;
-
-function compileShader(src, type) {
-  const shader = gl.createShader(type);
-  gl.shaderSource(shader, src);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    throw new Error(gl.getShaderInfoLog(shader));
-  }
-  return shader;
-}
-
-function renderShader() {
-  const fragmentShaderSrc = document.getElementById("shaderInput").value;
-
-  try {
-    const vert = compileShader(vertexShaderSrc, gl.VERTEX_SHADER);
-    const frag = compileShader(fragmentShaderSrc, gl.FRAGMENT_SHADER);
-
-    const prog = gl.createProgram();
-    gl.attachShader(prog, vert);
-    gl.attachShader(prog, frag);
-    gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-      throw new Error(gl.getProgramInfoLog(prog));
-    }
-
-    gl.useProgram(prog);
-    currentProgram = prog;
-
-    const positionLoc = gl.getAttribLocation(prog, "position");
-    gl.enableVertexAttribArray(positionLoc);
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
-    gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
-
-    const resLoc = gl.getUniformLocation(prog, "resolution");
-    gl.uniform2f(resLoc, canvas.width, canvas.height);
-
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0, 0, 0, 1); // black background
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-  } catch (err) {
-    alert("Shader Error:\n" + err.message);
-  }
-}
-
-function saveImage() {
-  // Wait one frame to ensure rendering is complete
-  requestAnimationFrame(() => {
-    const link = document.createElement("a");
-    link.download = "shader_output.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  });
-}
-
-// Auto-render once on page load
-renderShader();
-</script>
+    <script src="script.js"></script>
+  </div>
+  <button>Render Shader</button>
+  <button>Save PNG</button>
 
 </body>
+
 </html>
