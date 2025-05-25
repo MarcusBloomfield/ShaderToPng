@@ -2,14 +2,13 @@ const canvas = document.getElementById("glcanvas");
 const gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
 const errorConsoleOverlay = document.getElementById("errorConsoleOverlay");
 const errorConsoleMessage = document.getElementById("errorConsoleMessage");
-const shaderTextarea = document.getElementById("shaderInput"); // Renamed for clarity
+const shaderTextarea = document.getElementById("shaderInput");
 
-let shaderEditor; // Will hold the CodeMirror instance
+let shaderEditor;
 
-const MAX_SHADER_LENGTH = 10000; // Max characters for shader code
+const MAX_SHADER_LENGTH = 10000; 
 
-// Rate limiting for shader compilation
-const COMPILE_RATE_LIMIT_MS = 500; // Minimum 0.5 seconds between compiles
+const COMPILE_RATE_LIMIT_MS = 100;
 let lastCompileTimestamp = 0;
 
 const vertexShaderSrc = `
